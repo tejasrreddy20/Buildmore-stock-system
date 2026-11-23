@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Buildmore Ventures LLP — Stock &amp; Inventory System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --surface: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --blue: #2563eb;
+      --orange: #f97316;
+      --orange-dark: #ea580c;
+      --red: #dc2626;
+      --green: #16a34a;
+      --amber: #d97706;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* Login Screen */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: var(--bg);
+    }
+    .login-screen.hidden { display: none; }
+    .login-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
+    }
+    .login-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .login-error {
+      background: #fef2f2;
+      color: var(--red);
+      border: 1px solid #fecaca;
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 12px;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .login-error.show { display: block; }
+    .login-hint {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 11.5px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* App Shell */
+    .app-shell { display: none; min-height: 100vh; width: 100%; }
+    .app-shell.active { display: flex; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 245px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 16px 14px;
+      flex-shrink: 0;
+    }
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 14px;
+    }
+    .logo-b {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #f97316;
+      border: 1.5px solid #e5e7eb;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .brand-name { font-size: 13px; font-weight: 700; line-height: 1.25; }
+    .brand-sub { font-size: 11px; color: var(--muted); }
+
+    .nav-group-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin: 10px 8px 6px;
+    }
+    .nav-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: transparent;
+      border: none;
+      padding: 8px 10px;
+      border-radius: 7px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #374151;
+      cursor: pointer;
+      margin-bottom: 2px;
+      text-align: left;
+    }
+    .nav-item:hover { background: #f3f4f6; }
+    .nav-item.active { background: #eff6ff; color: var(--blue); font-weight: 600; }
+    .pill-count {
+      background: #fee2e2;
+      color: var(--red);
+      font-size: 11px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 999px;
+    }
+
+    .live-sync {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 500;
+    }
+    .live-sync.warn { color: var(--red); }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+
+    /* Main Content */
+    .main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .topbar {
+      height: 58px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 22px;
+      gap: 12px;
+    }
+    .search-input {
+      width: 100%;
+      max-width: 380px;
+      padding: 7px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 13px;
+      outline: none;
+      background: #f9fafb;
+    }
+    .search-input:focus { border-color: var(--blue); background: #fff; }
+
+    .topbar-actions { display: flex; align-items: center; gap: 10px; }
+    .icon-btn {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+      color: #374151;
+      font-weight: 500;
+    }
+    .icon-btn:hover { background: #f9fafb; }
+    .user-box { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+    .user-avatar {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: #dbeafe; color: var(--blue);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 11px;
+    }
+    .user-role { font-size: 10px; color: var(--muted); font-weight: 700; text-transform: uppercase; }
+
+    /* Page Body */
+    .workspace { padding: 20px 22px; }
+    .header-strip {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .header-strip h1 { font-size: 20px; font-weight: 700; }
+    .header-strip p { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      padding: 7px 12px;
+      border-radius: 7px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn:hover { background: #f9fafb; }
+    .btn-blue { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .btn-blue:hover { background: #1d4ed8; }
+    .btn-orange { background: var(--orange); color: #fff; border-color: var(--orange); }
+    .btn-orange:hover { background: var(--orange-dark); }
+
+    /* Overview KPIs & Charts */
+    .overview-widgets.hidden { display: none; }
+    .kpi-grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .kpi-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 1024px) {
+      .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid-3 { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+      .app-shell.active { flex-direction: column; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+      .kpi-grid-4 { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .card-title-sm { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
+    .card-metric { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .card-sub { font-size: 11.5px; color: var(--muted); }
+    .text-red { color: var(--red); }
+    .text-amber { color: var(--amber); }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1.55fr 1fr;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 960px) {
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+    .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px; }
+    .chart-header h2 { font-size: 14px; font-weight: 700; }
+    .seg-group { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+    .seg-btn { border: none; background: #fff; padding: 4px 10px; font-size: 11.5px; cursor: pointer; color: #374151; }
+    .seg-btn.active { background: #eff6ff; color: var(--blue); font-weight: 600; }
+    .chart-box { position: relative; height: 250px; }
+
+    /* Table */
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th, td { padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    th { background: #f9fafb; font-size: 11px; text-transform: uppercase; color: var(--muted); }
+    tr:last-child td { border-bottom: none; }
+    .badge { padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .b-ok { background: #dcfce7; color: var(--green); }
+    .b-low { background: #fef3c7; color: var(--amber); }
+    .b-out { background: #fee2e2; color: var(--red); }
+    .mini-btn { border: 1px solid var(--border); background: #fff; padding: 4px 8px; border-radius: 6px; font-size: 11.5px; cursor: pointer; margin-right: 4px; }
+    .mini-btn:hover { background: #f3f4f6; }
+    .mini-btn.del { color: var(--red); border-color: #fecaca; }
+
+    /* Modal */
+    .backdrop {
+      position: fixed; inset: 0; background: rgba(17, 24, 39, 0.45);
+      display: none; align-items: center; justify-content: center; padding: 16px; z-index: 50;
+    }
+    .backdrop.open { display: flex; }
+    .modal { background: #fff; border-radius: 10px; width: 100%; max-width: 420px; padding: 18px; }
+    .modal h3 { font-size: 16px; margin-bottom: 12px; }
+    .field { margin-bottom: 10px; }
+    .field label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; }
+    .field input, .field select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-size: 13px; }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px; }
+  </style>
+</head>
+<body>
+
+  <!-- Login Screen at Start -->
+  <section class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-brand">
+        <div class="logo-b" aria-label="Buildmore">B</div>
+        <div>
+          <div class="brand-name">Buildmore Ventures LLP</div>
+          <div class="brand-sub">Sign in to Inventory Control</div>
+        </div>
+      </div>
+
+      <div class="login-error" id="loginError">Invalid role, username, or password.</div>
+
+      <form onsubmit="handleLogin(event)">
+        <div class="field">
+          <label for="loginRole">Role</label>
+          <select id="loginRole" required>
+            <option value="ADMIN">Admin</option>
+            <option value="STAFF">Staff</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="loginUsername">Username</label>
+          <input type="text" id="loginUsername" required placeholder="Enter username" />
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" required placeholder="Enter password" />
+        </div>
+        <button type="submit" class="btn btn-orange" style="width:100%; margin-top:6px; padding:9px 12px;">Login</button>
+      </form>
+
+      <div class="login-hint">
+        <strong>Default Logins:</strong><br />
+        Admin: <code>admin</code> / <code>123</code><br />
+        Staff: <code>staff</code> / <code>123</code><br />
+        <span>(Passwords can be edited inside <strong>User Management</strong> after login.)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Application -->
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar">
+      <div class="brand-row">
+        <div class="logo-b" aria-label="Buildmore">B</div>
+        <div>
+          <div class="brand-name">Buildmore Ventures LLP</div>
+          <div class="brand-sub">Inventory Control</div>
+        </div>
+      </div>
+
+      <div class="nav-group-label">Operations</div>
+      <button class="nav-item active" data-view="overview" onclick="switchView('overview', this)">Overview</button>
+      <button class="nav-item" data-view="inventory" onclick="switchView('inventory', this)">Inventory</button>
+      <button class="nav-item" data-view="stock-in" onclick="switchView('stock-in', this)">Stock In</button>
+      <button class="nav-item" data-view="stock-out" onclick="switchView('stock-out', this)">Stock Out</button>
+      <button class="nav-item" data-view="transactions" onclick="switchView('transactions', this)">Transactions</button>
+      <button class="nav-item" data-view="low-stock" onclick="switchView('low-stock', this)">
+        <span>Low Stock Alerts</span>
+        <span class="pill-count" id="sidebarAlertCount">0</span>
+      </button>
+
+      <div class="nav-group-label">Administration</div>
+      <button class="nav-item" data-view="users" onclick="switchView('users', this)">User Management</button>
+      <button class="nav-item" data-view="settings" onclick="switchView('settings', this)">Settings</button>
+
+      <div class="live-sync" id="storageIndicator">
+        <span class="live-dot"></span>
+        <span id="storageStatusText">Saved locally</span>
+      </div>
+    </aside>
+
+    <div class="main">
+      <header class="topbar">
+        <input
+          type="text"
+          id="searchBox"
+          class="search-input"
+          placeholder="Search products by name, SKU, or category..."
+          oninput="renderAll()"
+        />
+        <div class="topbar-actions">
+          <button class="icon-btn" onclick="switchView('low-stock')" title="Low Stock Alerts">Alerts</button>
+          <div class="user-box">
+            <div class="user-avatar" id="userAvatar">BA</div>
+            <div>
+              <div style="font-weight:600;" id="activeUserLabel">Buildmore Administrator</div>
+              <div class="user-role" id="activeRoleLabel">ADMIN</div>
+            </div>
+          </div>
+          <button class="icon-btn" onclick="resetToZero()">Reset</button>
+          <button class="icon-btn" onclick="handleLogout()">Logout</button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <div class="header-strip">
+          <div>
+            <h1 id="pageHeading">Inventory Overview</h1>
+            <p id="pageSubheading">Real-time stock metrics, movement analytics, and alerts for Buildmore Ventures LLP.</p>
+          </div>
+          <div class="btn-row">
+            <button class="btn" onclick="openMovementModal('IN')">&#8601; Stock In</button>
+            <button class="btn btn-blue" onclick="openMovementModal('OUT')">&#8599; Stock Out</button>
+            <button class="btn btn-orange" onclick="openProductModal()">+ Add Product</button>
+          </div>
+        </div>
+
+        <!-- Overview-only KPIs and Charts -->
+        <div class="overview-widgets" id="overviewWidgets">
+          <div class="kpi-grid-4">
+            <div class="card">
+              <div class="card-title-sm">Total Products</div>
+              <div class="card-metric" id="kpiProducts">0</div>
+              <div class="card-sub" id="kpiHealthy">0 healthy in stock</div>
+            </div>
+            <div class="card">
+              <div class="card-title-sm">Total Stock Units</div>
+              <div class="card-metric" id="kpiUnits">0</div>
+              <div class="card-sub">Across all active SKUs</div>
+            </div>
+            <div class="card">
+              <div class="card-title-sm">Inventory Value</div>
+              <div class="card-metric" id="kpiValue">&#8377;0.00</div>
+              <div class="card-sub" id="kpiCosted">Based on 0 costed items</div>
+            </div>
+            <div class="card">
+              <div class="card-title-sm">Low Stock Items</div>
+              <div class="card-metric text-amber" id="kpiLow">0</div>
+              <div class="card-sub">At or below min threshold</div>
+            </div>
+          </div>
+
+          <div class="kpi-grid-3">
+            <div class="card">
+              <div class="card-title-sm">Out of Stock</div>
+              <div class="card-metric text-red" id="kpiOut">0</div>
+              <div class="card-sub">Requires immediate reorder</div>
+            </div>
+            <div class="card">
+              <div class="card-title-sm">Stock-In Today</div>
+              <div class="card-metric" id="kpiInToday">0</div>
+              <div class="card-sub" id="kpiInUnits">+0 units received</div>
+            </div>
+            <div class="card">
+              <div class="card-title-sm">Stock-Out Today</div>
+              <div class="card-metric" id="kpiOutToday">0</div>
+              <div class="card-sub" id="kpiOutUnits">-0 units issued</div>
+            </div>
+          </div>
+
+          <div class="charts-grid">
+            <div class="card">
+              <div class="chart-header">
+                <h2>Stock Movement</h2>
+                <div class="seg-group">
+                  <button class="seg-btn active" data-range="Daily" onclick="setRange('Daily', this)">Daily</button>
+                  <button class="seg-btn" data-range="Weekly" onclick="setRange('Weekly', this)">Weekly</button>
+                  <button class="seg-btn" data-range="Monthly" onclick="setRange('Monthly', this)">Monthly</button>
+                </div>
+              </div>
+              <div class="chart-box">
+                <canvas id="movementChart"></canvas>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="chart-header">
+                <h2>Stock Health Overview</h2>
+              </div>
+              <div class="chart-box">
+                <canvas id="healthChart"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="table-wrap" id="tableSection">
+          <table>
+            <thead id="tableHead"></thead>
+            <tbody id="tableBody"></tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Product Add/Edit Modal -->
+  <div class="backdrop" id="productModal">
+    <div class="modal">
+      <h3 id="productModalTitle">Add Product</h3>
+      <form onsubmit="saveProduct(event)">
+        <input type="hidden" id="prodId" />
+        <div class="field">
+          <label>SKU</label>
+          <input type="text" id="prodSku" required placeholder="e.g., BLD-101" />
+        </div>
+        <div class="field">
+          <label>Product Name</label>
+          <input type="text" id="prodName" required placeholder="e.g., Double Charge Tile 600x600" />
+        </div>
+        <div class="field">
+          <label>Category</label>
+          <input type="text" id="prodCat" required placeholder="e.g., Tiles, Sanitaryware, Cement" />
+        </div>
+        <div class="field">
+          <label>Stock Quantity</label>
+          <input type="number" id="prodQty" min="0" required />
+        </div>
+        <div class="field">
+          <label>Min Threshold</label>
+          <input type="number" id="prodMin" min="0" value="0" required />
+        </div>
+        <div class="field">
+          <label>Unit Price (&#8377;)</label>
+          <input type="number" id="prodPrice" min="0" step="0.01" required />
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" onclick="closeModals()">Cancel</button>
+          <button type="submit" class="btn btn-orange">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stock In / Stock Out Modal -->
+  <div class="backdrop" id="movementModal">
+    <div class="modal">
+      <h3 id="movementModalTitle">Stock In</h3>
+      <form onsubmit="applyMovement(event)">
+        <input type="hidden" id="moveType" value="IN" />
+        <div class="field">
+          <label>Select Product</label>
+          <select id="moveProductId" required></select>
+        </div>
+        <div class="field">
+          <label>Quantity</label>
+          <input type="number" id="moveQty" min="1" required />
+        </div>
+        <div class="field">
+          <label>Reference / Note</label>
+          <input type="text" id="moveNote" placeholder="Invoice / Chalan / Counter sale" />
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" onclick="closeModals()">Cancel</button>
+          <button type="submit" class="btn btn-blue">Confirm</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Edit User Password Modal -->
+  <div class="backdrop" id="passwordModal">
+    <div class="modal">
+      <h3 id="passwordModalTitle">Edit Password</h3>
+      <form onsubmit="saveNewPassword(event)">
+        <input type="hidden" id="pwTargetRole" />
+        <div class="field">
+          <label>User</label>
+          <input type="text" id="pwTargetUserDisplay" disabled />
+        </div>
+        <div class="field">
+          <label>New Password</label>
+          <input type="password" id="pwNewInput" required minlength="1" placeholder="Enter new password" />
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn" onclick="closeModals()">Cancel</button>
+          <button type="submit" class="btn btn-orange">Update Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const DATA_KEY = "buildmore_llp_data_v3";
+    const USERS_KEY = "buildmore_llp_users_v3";
+    const SESSION_KEY = "buildmore_llp_session_v3";
+    const todayStr = new Date().toISOString().slice(0, 10);
+
+    const defaultUsers = {
+      ADMIN: { username: "admin", password: "123", displayName: "Buildmore Administrator", initials: "BA" },
+      STAFF: { username: "staff", password: "123", displayName: "Store Staff", initials: "ST" }
+    };
+
+    const defaultData = {
+      products: [
+        { id: "p1", sku: "TIL-01", name: "Vitrified Floor Tile 2x2", category: "Tiles", qty: 0, min: 0, price: 0 },
+        { id: "p2", sku: "SAN-02", name: "One-Piece Water Closet", category: "Sanitaryware", qty: 0, min: 0, price: 0 },
+        { id: "p3", sku: "PLM-03", name: "CPVC Ball Valve 1 in", category: "Plumbing", qty: 0, min: 0, price: 0 },
+        { id: "p4", sku: "PNT-04", name: "Interior Emulsion 20L", category: "Paints", qty: 0, min: 0, price: 0 },
+        { id: "p5", sku: "HW-05", name: "SS Bathroom Mixer Set", category: "Hardware", qty: 0, min: 0, price: 0 },
+        { id: "p6", sku: "CEM-06", name: "OPC 53 Grade Cement Bag", category: "Building Material", qty: 0, min: 0, price: 0 }
+      ],
+      transactions: []
+    };
+
+    let storageAvailable = true;
+
+    function readStorage(key, fallback) {
+      try {
+        const raw = window.localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(fallback));
+      } catch (err) {
+        storageAvailable = false;
+        return JSON.parse(JSON.stringify(fallback));
+      }
+    }
+
+    function writeStorage(key, value) {
+      try {
+        window.localStorage.setItem(key, JSON.stringify(value));
+        storageAvailable = true;
+      } catch (err) {
+        storageAvailable = false;
+      }
+      updateStorageBadge();
+    }
+
+    function updateStorageBadge() {
+      const badge = document.getElementById("storageIndicator");
+      const text = document.getElementById("storageStatusText");
+      if (!badge || !text) return;
+      if (storageAvailable) {
+        badge.classList.remove("warn");
+        text.textContent = "Saved locally";
+      } else {
+        badge.classList.add("warn");
+        text.textContent = "Storage blocked (Private mode?)";
+      }
+    }
+
+    let users = readStorage(USERS_KEY, defaultUsers);
+    let state = readStorage(DATA_KEY, defaultData);
+    let session = readStorage(SESSION_KEY, null);
+    let activeView = "overview";
+    let chartRange = "Daily";
+    let movementChartInstance = null;
+    let healthChartInstance = null;
+
+    function saveState() {
+      writeStorage(DATA_KEY, state);
+      renderAll();
+    }
+
+    function saveUsers() {
+      writeStorage(USERS_KEY, users);
+      renderAll();
+    }
+
+    function resetToZero() {
+      state = {
+        products: state.products.map(p => ({ ...p, qty: 0, min: 0, price: 0 })),
+        transactions: []
+      };
+      saveState();
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const role = document.getElementById("loginRole").value;
+      const username = document.getElementById("loginUsername").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      const account = users[role];
+
+      if (!account || username !== account.username || password !== account.password) {
+        document.getElementById("loginError").classList.add("show");
+        return;
+      }
+
+      document.getElementById("loginError").classList.remove("show");
+      session = {
+        role,
+        username: account.username,
+        displayName: account.displayName,
+        initials: account.initials
+      };
+      writeStorage(SESSION_KEY, session);
+      applyAuthVisibility();
+      renderAll();
+    }
+
+    function handleLogout() {
+      session = null;
+      try { window.localStorage.removeItem(SESSION_KEY); } catch (err) {}
+      document.getElementById("loginPassword").value = "";
+      applyAuthVisibility();
+    }
+
+    function applyAuthVisibility() {
+      const loginScreen = document.getElementById("loginScreen");
+      const appShell = document.getElementById("appShell");
+
+      if (!session) {
+        loginScreen.classList.remove("hidden");
+        appShell.classList.remove("active");
+        return;
+      }
+
+      loginScreen.classList.add("hidden");
+      appShell.classList.add("active");
+      document.getElementById("activeUserLabel").textContent = session.displayName;
+      document.getElementById("activeRoleLabel").textContent = session.role;
+      document.getElementById("userAvatar").textContent = session.initials;
+      updateStorageBadge();
+    }
+
+    function openPasswordModal(role) {
+      const acc = users[role];
+      if (!acc) return;
+      document.getElementById("pwTargetRole").value = role;
+      document.getElementById("passwordModalTitle").textContent = `Edit ${role} Password`;
+      document.getElementById("pwTargetUserDisplay").value = `${acc.displayName} (${acc.username})`;
+      document.getElementById("pwNewInput").value = "";
+      document.getElementById("passwordModal").classList.add("open");
+    }
+
+    function saveNewPassword(e) {
+      e.preventDefault();
+      const role = document.getElementById("pwTargetRole").value;
+      const newPw = document.getElementById("pwNewInput").value;
+      if (!users[role] || !newPw) return;
+      users[role].password = newPw;
+      closeModals();
+      saveUsers();
+    }
+
+    function switchView(view, btn) {
+      activeView = view;
+      document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+      const targetBtn = btn || document.querySelector(`.nav-item[data-view="${view}"]`);
+      if (targetBtn) targetBtn.classList.add("active");
+
+      const headings = {
+        "overview": ["Inventory Overview", "Real-time stock metrics, movement analytics, and alerts for Buildmore Ventures LLP."],
+        "inventory": ["Inventory", "Product stock list for Buildmore Ventures LLP."],
+        "stock-in": ["Stock In", "Recent inward stock entries and quick stock-in actions."],
+        "stock-out": ["Stock Out", "Recent outward stock dispatches and quick stock-out actions."],
+        "transactions": ["Transactions", "Chronological log of all Stock In and Stock Out movements."],
+        "low-stock": ["Low Stock Alerts", "Items at or below minimum threshold or out of stock."],
+        "users": ["User Management", "Admin and Staff logins with password editing."],
+        "settings": ["Settings", "Saved local inventory settings."]
+      };
+      const [h, s] = headings[view] || headings.overview;
+      document.getElementById("pageHeading").textContent = h;
+      document.getElementById("pageSubheading").textContent = s;
+
+      document.getElementById("overviewWidgets").classList.toggle("hidden", view !== "overview");
+      renderAll();
+    }
+
+    function setRange(range, btn) {
+      chartRange = range;
+      document.querySelectorAll(".seg-btn").forEach(b => b.classList.remove("active"));
+      if (btn) btn.classList.add("active");
+      updateCharts();
+    }
+
+    function formatINR(amount) {
+      return new Intl.NumberFormat("en-IN", {
+        style: "currency",
+        currency: "INR",
+        minimumFractionDigits: 2
+      }).format(amount);
+    }
+
+    function renderAll() {
+      if (!session) return;
+
+      const q = document.getElementById("searchBox").value.trim().toLowerCase();
+      const prods = state.products;
+
+      const totalProducts = prods.length;
+      const totalUnits = prods.reduce((s, p) => s + Number(p.qty), 0);
+      const inventoryValue = prods.reduce((s, p) => s + Number(p.qty) * Number(p.price), 0);
+      const outOfStock = prods.filter(p => Number(p.qty) === 0).length;
+      const lowStock = prods.filter(p => Number(p.qty) > 0 && Number(p.qty) <= Number(p.min)).length;
+      const alertTotal = outOfStock + lowStock;
+      const healthy = prods.filter(p => Number(p.qty) > Number(p.min)).length;
+
+      const todayTx = state.transactions.filter(t => t.date === todayStr);
+      const inTx = todayTx.filter(t => t.type === "IN");
+      const outTx = todayTx.filter(t => t.type === "OUT");
+      const inUnits = inTx.reduce((s, t) => s + Number(t.qty), 0);
+      const outUnits = outTx.reduce((s, t) => s + Number(t.qty), 0);
+
+      document.getElementById("kpiProducts").textContent = totalProducts;
+      document.getElementById("kpiHealthy").textContent = `${healthy} healthy in stock`;
+      document.getElementById("kpiUnits").textContent = totalUnits;
+      document.getElementById("kpiValue").textContent = formatINR(inventoryValue);
+      document.getElementById("kpiCosted").textContent = `Based on ${totalProducts} costed items`;
+      document.getElementById("kpiLow").textContent = lowStock;
+      document.getElementById("kpiOut").textContent = outOfStock;
+      document.getElementById("kpiInToday").textContent = inTx.length;
+      document.getElementById("kpiInUnits").textContent = `+${inUnits} units received`;
+      document.getElementById("kpiOutToday").textContent = outTx.length;
+      document.getElementById("kpiOutUnits").textContent = `-${outUnits} units issued`;
+      document.getElementById("sidebarAlertCount").textContent = alertTotal;
+
+      renderTable(q);
+      if (activeView === "overview") {
+        updateCharts(healthy, lowStock, outOfStock, inUnits, outUnits);
+      }
+    }
+
+    function renderTable(query) {
+      const thead = document.getElementById("tableHead");
+      const tbody = document.getElementById("tableBody");
+
+      if (activeView === "transactions" || activeView === "stock-in" || activeView === "stock-out") {
+        const txList = state.transactions.filter(t => {
+          const typeOk =
+            activeView === "transactions" ||
+            (activeView === "stock-in" && t.type === "IN") ||
+            (activeView === "stock-out" && t.type === "OUT");
+          const qOk =
+            !query ||
+            t.sku.toLowerCase().includes(query) ||
+            t.name.toLowerCase().includes(query) ||
+            (t.note || "").toLowerCase().includes(query);
+          return typeOk && qOk;
+        });
+
+        thead.innerHTML = `<tr><th>Date</th><th>Type</th><th>SKU</th><th>Product</th><th>Qty</th><th>Note</th></tr>`;
+        tbody.innerHTML = txList.length
+          ? txList.map(t => `
+              <tr>
+                <td>${esc(t.date)}</td>
+                <td><span class="badge ${t.type === "IN" ? "b-ok" : "b-low"}">${t.type === "IN" ? "Stock In" : "Stock Out"}</span></td>
+                <td><strong>${esc(t.sku)}</strong></td>
+                <td>${esc(t.name)}</td>
+                <td><strong>${t.type === "IN" ? "+" : "-"}${t.qty}</strong></td>
+                <td>${esc(t.note || "-")}</td>
+              </tr>
+            `).join("")
+          : `<tr><td colspan="6" style="text-align:center;color:#6b7280;padding:20px;">No transactions found.</td></tr>`;
+        return;
+      }
+
+      if (activeView === "users") {
+        thead.innerHTML = `<tr><th>Name</th><th>Username</th><th>Role</th><th>Password</th><th>Action</th></tr>`;
+        tbody.innerHTML = Object.entries(users).map(([role, acc]) => `
+          <tr>
+            <td>${esc(acc.displayName)}</td>
+            <td><strong>${esc(acc.username)}</strong></td>
+            <td>${esc(role)}</td>
+            <td>${esc(acc.password)}</td>
+            <td><button class="mini-btn" onclick="openPasswordModal('${role}')">Edit Password</button></td>
+          </tr>
+        `).join("");
+        return;
+      }
+
+      if (activeView === "settings") {
+        thead.innerHTML = `<tr><th>Setting</th><th>Value</th></tr>`;
+        tbody.innerHTML = `
+          <tr><td>Organization</td><td>Buildmore Ventures LLP</td></tr>
+          <tr><td>Currency</td><td>INR (&#8377;)</td></tr>
+          <tr><td>Saved Items Count</td><td>${state.products.length} products</td></tr>
+        `;
+        return;
+      }
+
+      const list = state.products.filter(p => {
+        const qOk =
+          !query ||
+          p.sku.toLowerCase().includes(query) ||
+          p.name.toLowerCase().includes(query) ||
+          p.category.toLowerCase().includes(query);
+        const viewOk = activeView !== "low-stock" || Number(p.qty) <= Number(p.min);
+        return qOk && viewOk;
+      });
+
+      thead.innerHTML = `
+        <tr>
+          <th>SKU</th>
+          <th>Product</th>
+          <th>Category</th>
+          <th>Stock</th>
+          <th>Min</th>
+          <th>Price</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      `;
+
+      tbody.innerHTML = list.length
+        ? list.map(p => {
+            const isOut = Number(p.qty) === 0;
+            const isLow = !isOut && Number(p.qty) <= Number(p.min);
+            const badgeClass = isOut ? "b-out" : isLow ? "b-low" : "b-ok";
+            const badgeText = isOut ? "Out of Stock" : isLow ? "Low Stock" : "In Stock";
+            return `
+              <tr>
+                <td><strong>${esc(p.sku)}</strong></td>
+                <td>${esc(p.name)}</td>
+                <td>${esc(p.category)}</td>
+                <td><strong>${p.qty}</strong></td>
+                <td>${p.min}</td>
+                <td>${formatINR(p.price)}</td>
+                <td><span class="badge ${badgeClass}">${badgeText}</span></td>
+                <td>
+                  <button class="mini-btn" onclick="openProductModal('${p.id}')">Edit</button>
+                  <button class="mini-btn del" onclick="deleteProduct('${p.id}')">Delete</button>
+                </td>
+              </tr>
+            `;
+          }).join("")
+        : `<tr><td colspan="8" style="text-align:center;color:#6b7280;padding:20px;">No matching items.</td></tr>`;
+    }
+
+    function updateCharts(healthy = 0, lowStock = 0, outOfStock = 0, inUnits = 0, outUnits = 0) {
+      if (typeof Chart === "undefined") return;
+      const mult = chartRange === "Weekly" ? 7 : chartRange === "Monthly" ? 30 : 1;
+      const barCtx = document.getElementById("movementChart").getContext("2d");
+      const donutCtx = document.getElementById("healthChart").getContext("2d");
+
+      if (movementChartInstance) movementChartInstance.destroy();
+      if (healthChartInstance) healthChartInstance.destroy();
+
+      movementChartInstance = new Chart(barCtx, {
+        type: "bar",
+        data: {
+          labels: [todayStr],
+          datasets: [
+            { label: "Stock In", data: [inUnits * mult], backgroundColor: "#2563eb", borderRadius: 4 },
+            { label: "Stock Out", data: [outUnits * mult], backgroundColor: "#9ca3af", borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+
+      healthChartInstance = new Chart(donutCtx, {
+        type: "doughnut",
+        data: {
+          labels: ["In Stock", "Low Stock", "Out of Stock"],
+          datasets: [{
+            data: [healthy, lowStock, outOfStock],
+            backgroundColor: ["#16a34a", "#f59e0b", "#ef4444"],
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          cutout: "65%",
+          plugins: { legend: { position: "bottom" } }
+        }
+      });
+    }
+
+    function openProductModal(id) {
+      document.getElementById("productModalTitle").textContent = id ? "Edit Product" : "Add Product";
+      document.getElementById("prodId").value = id || "";
+      if (id) {
+        const p = state.products.find(x => x.id === id);
+        if (!p) return;
+        document.getElementById("prodSku").value = p.sku;
+        document.getElementById("prodName").value = p.name;
+        document.getElementById("prodCat").value = p.category;
+        document.getElementById("prodQty").value = p.qty;
+        document.getElementById("prodMin").value = p.min;
+        document.getElementById("prodPrice").value = p.price;
+      } else {
+        document.getElementById("prodSku").value = "";
+        document.getElementById("prodName").value = "";
+        document.getElementById("prodCat").value = "";
+        document.getElementById("prodQty").value = "0";
+        document.getElementById("prodMin").value = "0";
+        document.getElementById("prodPrice").value = "0";
+      }
+      document.getElementById("productModal").classList.add("open");
+    }
+
+    function saveProduct(e) {
+      e.preventDefault();
+      const id = document.getElementById("prodId").value;
+      const item = {
+        id: id || "p_" + Date.now(),
+        sku: document.getElementById("prodSku").value.trim(),
+        name: document.getElementById("prodName").value.trim(),
+        category: document.getElementById("prodCat").value.trim(),
+        qty: Math.max(0, Number(document.getElementById("prodQty").value)),
+        min: Math.max(0, Number(document.getElementById("prodMin").value)),
+        price: Math.max(0, Number(document.getElementById("prodPrice").value))
+      };
+
+      if (id) {
+        state.products = state.products.map(p => (p.id === id ? item : p));
+      } else {
+        state.products = [item, ...state.products];
+      }
+      closeModals();
+      saveState();
+    }
+
+    function deleteProduct(id) {
+      state.products = state.products.filter(p => p.id !== id);
+      saveState();
+    }
+
+    function openMovementModal(type) {
+      document.getElementById("moveType").value = type;
+      document.getElementById("movementModalTitle").textContent = type === "IN" ? "Stock In" : "Stock Out";
+      const select = document.getElementById("moveProductId");
+      select.innerHTML = state.products
+        .map(p => `<option value="${p.id}">${esc(p.sku)} — ${esc(p.name)} (${p.qty} in stock)</option>`)
+        .join("");
+      document.getElementById("moveQty").value = "1";
+      document.getElementById("moveNote").value = "";
+      document.getElementById("movementModal").classList.add("open");
+    }
+
+    function applyMovement(e) {
+      e.preventDefault();
+      const type = document.getElementById("moveType").value;
+      const prodId = document.getElementById("moveProductId").value;
+      const qty = Math.max(1, Number(document.getElementById("moveQty").value));
+      const note = document.getElementById("moveNote").value.trim();
+
+      const prod = state.products.find(p => p.id === prodId);
+      if (!prod) return;
+
+      if (type === "IN") {
+        prod.qty = Number(prod.qty) + qty;
+      } else {
+        prod.qty = Math.max(0, Number(prod.qty) - qty);
+      }
+
+      state.transactions.unshift({
+        id: "t_" + Date.now(),
+        date: todayStr,
+        type,
+        sku: prod.sku,
+        name: prod.name,
+        qty,
+        note
+      });
+
+      closeModals();
+      saveState();
+    }
+
+    function closeModals() {
+      document.querySelectorAll(".backdrop").forEach(m => m.classList.remove("open"));
+    }
+
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, c => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[c]));
+    }
+
+    applyAuthVisibility();
+    renderAll();
+  </script>
+</body>
+</html>
